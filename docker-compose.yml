@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+      - "3000:3000"
+    environment:
+      API_BASE_URL: https://showmevibecode.up.railway.app/api/model/v1
+      API_KEY: exam_PDOKG1XU21r1sX6gK4Dxi-f_M6kdUjt96Ve-CKfL0VQ
+      MODEL_NAME: linext-5.3-luna
+      PORT: 5000
+    volumes:
+      - ./data:/app/data
+    container_name: agent-workbench
