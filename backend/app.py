@@ -9,13 +9,31 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, asdict
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+# Determine frontend build directory (support both Docker and local environments)
+app_py_dir = Path(__file__).parent
+possible_dist_dirs = [
+    app_py_dir.parent / "frontend" / "dist",  # Local development
+    Path("/app") / "frontend" / "dist",  # Docker container
+    Path("/app/frontend/dist"),  # Alternative Docker path
+]
+
+FRONTEND_BUILD_DIR = None
+for dist_dir in possible_dist_dirs:
+    if dist_dir.exists():
+        FRONTEND_BUILD_DIR = dist_dir
+        break
+
+if FRONTEND_BUILD_DIR:
+    app = Flask(__name__, static_folder=str(FRONTEND_BUILD_DIR), static_url_path="")
+else:
+    app = Flask(__name__)
+    
 CORS(app)
 
 # Configuration
@@ -373,8 +391,42 @@ def delete_session(session_id: str):
         return jsonify({"status": "deleted"}), 200
     return jsonify({"error": "Session not found"}), 404
 
+# Serve frontend static files
+@app.route("/", methods=["GET"])
+def serve_index():
+    if not FRONTEND_BUILD_DIR:
+        return jsonify({"error": "Frontend not built"}), 503
+    index_path = FRONTEND_BUILD_DIR / "index.html"
+    if index_path.exists():
+        return send_file(str(index_path))
+    return jsonify({"error": "Frontend not built"}), 503
+
+@app.route("/<path:filename>", methods=["GET"])
+def serve_static(filename):
+    if not FRONTEND_BUILD_DIR:
+        return jsonify({"error": "Frontend not built"}), 503
+    # Don't serve API routes
+    if filename.startswith("api/"):
+        return None  # Let Flask handle as 404
+    file_path = FRONTEND_BUILD_DIR / filename
+    if file_path.exists() and file_path.is_file():
+        return send_from_directory(str(FRONTEND_BUILD_DIR), filename)
+    # For client-side routing, serve index.html
+    index_path = FRONTEND_BUILD_DIR / "index.html"
+    if index_path.exists():
+        return send_file(str(index_path))
+    return jsonify({"error": "Not found"}), 404
+
 @app.errorhandler(404)
 def not_found(error):
+    # For API calls, return JSON error
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Not found"}), 404
+    # For other routes, serve index.html for client-side routing
+    if FRONTEND_BUILD_DIR:
+        index_path = FRONTEND_BUILD_DIR / "index.html"
+        if index_path.exists():
+            return send_file(str(index_path))
     return jsonify({"error": "Not found"}), 404
 
 @app.errorhandler(500)

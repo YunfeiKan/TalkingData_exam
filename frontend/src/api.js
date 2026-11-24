@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Use relative API path for compatibility with Docker and production
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
 export const api = {
   // Session management
