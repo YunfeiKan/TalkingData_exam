@@ -1,11 +1,3 @@
-# 云端 Agent 助手工作台
-
-**Cloud Agent Assistant Workbench** - 一个完整的浏览器工作台，让你随时随地交给 AI Agent 完成各类工作任务。
-
-**GitHub**: https://github.com/YunfeiKan/TalkingData_exam
-
----
-
 ## 📋 目录
 
 - [快速开始](#快速开始)
@@ -38,7 +30,7 @@ cp backend/.env.example backend/.env
 docker-compose up --build
 
 # 4. 打开浏览器
-访问 http://localhost:3000
+访问 http://localhost:5000
 ```
 
 ### 本地启动
